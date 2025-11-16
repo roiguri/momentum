@@ -28,11 +28,53 @@ This project follows an incremental, phase-based development approach with 11 di
 
 See [docs/roadmap.md](docs/roadmap.md) for the complete development roadmap.
 
+## Setup Instructions
+
+### Prerequisites
+- Python 3.10 or higher
+- Google Gemini API key ([Get one here](https://aistudio.google.com/apikey))
+
+### Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd momentum
+   ```
+
+2. **Create and activate virtual environment**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure API keys**:
+   - Create a `.env.local` file in the project root
+   - Add your Gemini API key:
+     ```
+     GOOGLE_API_KEY=your_api_key_here
+     ```
+   - **Important**: Never commit `.env.local` (already in .gitignore)
+
+5. **Run the agent**:
+   ```bash
+   adk web --log_level DEBUG
+   ```
+
+For phase-specific setup instructions, see `docs/phases/phase-{N}.md`.
+
 ## Current Status
 
-🚀 **Phase**: Initial Setup
+🚀 **Phase**: Phase 0 - Project Setup (Complete)
 📝 **Next**: Phase 1 - Chat-Planner (MVA)
+
+See [docs/PROGRESS.md](docs/PROGRESS.md) for detailed progress tracking.
 
 ## License
 
-This project is part of a course submission.
+This project is part of the Kaggle 5-Day AI Agents Intensive Course Capstone Project.
