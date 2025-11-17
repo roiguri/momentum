@@ -62,11 +62,19 @@ This project follows a strict phase-based workflow:
 - Read ONLY the relevant sections (don't parse entire document)
 - This preserves token budget and improves efficiency
 
+**Code Quality Standards**:
+- **Minimal Comments**: Only explain WHY, not WHAT. Code should be self-explanatory through clear naming
+- **Always Review After Changes**: Remove unnecessary comments, reduce logging, clean up verbosity
+- **Keep Docstrings**: All functions and classes must have docstrings explaining their purpose
+- **No Redundant Documentation**: Avoid repeating what the code already says
+- **Clean Logging**: Keep console output minimal and purposeful
+
 ### After Completing Work
 
-1. Update `docs/PROGRESS.md` with completion status
-2. Get user approval that phase is complete before moving to next phase
-3. Commit changes with descriptive message
+1. **Review code**: Remove unnecessary comments and logging
+2. Update `docs/PROGRESS.md` with completion status
+3. Get user approval that phase is complete before moving to next phase
+4. Commit changes with descriptive message
 
 ## Project Architecture
 
@@ -91,28 +99,39 @@ This project follows a strict phase-based workflow:
 ### Development
 
 ```bash
-# Start ADK web interface with debug logging
+# Start ADK web interface
 adk web --log_level DEBUG
-
-# Run agent in development mode
-python main.py
 
 # Run evaluations
 adk eval run evals/evalset_phase1.json
 
 # Run specific eval with config
-adk eval agent_dir evalset.json --config_file_path=test_config.json
+adk eval agents evalset.json --config_file_path=test_config.json
 ```
 
 ### Testing
 
 ```bash
-# Test individual agent
+# Test agent via web interface
 adk web --log_level DEBUG
 
 # Run all evals for regression testing
 adk eval run evals/evalset_phase*.json
 ```
+
+## ADK Configuration
+
+The project uses ADK's standard directory structure:
+
+**Directory Structure**:
+- `agents/agent.py` - Root agent export (exports `root_agent`)
+- `agents/hub.py` - WellnessChiefAgent implementation
+- `agents/.env` - Symlink to `.env.local` (required by ADK)
+
+**Environment Variables**:
+- `.env.local` - API keys and configuration (in project root, gitignored)
+- `agents/.env` - Symlink to `.env.local` (ADK auto-loads this)
+- The symlink is committed to git (target file is gitignored)
 
 ## ADK Best Practices (Key Points)
 

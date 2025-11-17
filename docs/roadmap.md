@@ -24,6 +24,15 @@ We will add features in logical, self-contained blocks. Each phase builds on the
 ### Session Management
 We will start with `InMemorySessionService` for Phases 1-3 and explicitly migrate to `DatabaseSessionService` in Phase 4 as a prerequisite for the Long-Running Operation (LRO).
 
+**Note on Session State (Task 3 Deferral)**:
+- **Phase 1 Implementation Decision** (2025-11-17): Explicit session state management (using `tool_context.state`) has been deferred to Phase 3 or 4
+- **Rationale**: Gemini 2.5 Flash has 1M token context window, sufficient for Phase 1 conversation context without explicit state management
+- **Clarification**: Session state serves a **different purpose** from permanent memory:
+  - **Session State** = temporary conversation context within single session (user preferences before saving)
+  - **Permanent Memory** = historical data across sessions stored in Firestore (user profile, past plans, progress)
+- **Future Implementation**: Will add explicit session state when implementing Firestore integration (Phase 3+), where it will track temporary conversation flow state and user preferences before permanent storage
+- **Complementary Features**: Session state and Memory Bank are not alternatives - they work together for different purposes
+
 ### Database & Multiple Goals
 
 - **Decision**: We will design the Firestore schema from Day 1 to support multiple goals, even if we only implement the logic for a single goal in the MVP.
@@ -440,57 +449,71 @@ This is the proposed Firestore schema, designed to support all features includin
 
 ---
 
-## 5. Proposed Repository Structure
+## 5. Repository Structure
 
-This file structure separates concerns (agents, tools, services, evals) to support the incremental plan.
-
+**Current Structure (Phase 1)**:
 ```
-wellness-coach-agent/
-│
+momentum/
 ├── agents/
-│   │   # The main orchestrator
-│   ├── hub.py                     # WellnessChiefAgent (Phases 1, 4, 8)
-│   │
-│   └── spokes/
-│       │   # Specialist agents that act as tools
-│       ├── __init__.py
-│       ├── instructor_agent.py    # InstructorAgent (Phase 2)
-│       ├── scheduler_agent.py     # SchedulerAgent (Phase 4)
-│       ├── tracker_agent.py       # TrackerAgent (Phases 5, 6, 11)
-│       ├── nutritionist_agent.py  # NutritionistAgent (Phase 7)
-│       └── planner/
-│           │   # The plan generation loop
-│           ├── __init__.py
-│           ├── generator_agent.py   # PlanGeneratorAgent (Phase 8)
-│           └── critic_agent.py      # CriticAgent (Phase 9)
-│
-├── tools/
-│   │   # All custom FunctionTools
-│   ├── __init__.py
-│   ├── firestore_tools.py         # save_plan, log_workout, edit_plan, etc.
-│   └── external_api_tools.py      # Wrappers for Nutritionix, etc.
-│
-├── core/
-│   │   # Core application logic, DB setup
-│   ├── __init__.py
-│   ├── database.py                # Firestore client setup
-│   └── sessions.py                # Configuration for DatabaseSessionService
-│
+│   ├── agent.py           # Root agent export (required by ADK, exports root_agent)
+│   ├── hub.py             # WellnessChiefAgent (Phase 1+)
+│   ├── __init__.py        # Package exports
+│   ├── prompts/           # Agent instruction prompts (Python constants)
+│   │   ├── __init__.py
+│   │   └── wellness_chief.py
+│   └── .env → ../.env.local  # Symlink (ADK auto-loads this)
+├── docs/
+│   ├── roadmap.md         # This file - full project plan
+│   ├── PROGRESS.md        # Phase completion tracking
+│   ├── phases/            # Detailed phase implementation plans
+│   └── best-practices/    # ADK guidelines and checklists
 ├── evals/
-│   │   # All evaluation sets, one per phase
-│   ├── evalset_phase1.json
-│   ├── evalset_phase2.json
-│   ├── evalset_phase3.json
-│   ├── ...
-│   └── test_config.json
-│
-├── main.py                        # Main entry point to run the agent (adk web)
-│
-├── requirements.txt               # All project dependencies (google-adk, etc.)
-├── .env                           # Environment variables (API keys, DB paths)
+│   └── evalset_phase*.json  # Evaluation sets (one per phase)
+├── .env.local             # API keys (gitignored, single source of truth)
+├── .env.example           # Template for environment setup
 ├── .gitignore
-├── README.md                      # Project documentation (for Kaggle submission)
-└── .agent_engine_config.json      # Deployment config (Phase 11)
+├── README.md
+└── requirements.txt
 ```
+
+**Final Structure (All Phases)**:
+```
+momentum/
+├── agents/
+│   ├── agent.py              # Root agent export (exports root_agent)
+│   ├── hub.py                # WellnessChiefAgent (main orchestrator)
+│   ├── __init__.py
+│   ├── prompts/              # All agent instruction prompts (centralized)
+│   │   ├── __init__.py
+│   │   ├── wellness_chief.py
+│   │   ├── instructor.py     # Phase 2
+│   │   ├── scheduler.py      # Phase 4
+│   │   └── ...
+│   ├── .env → ../.env.local
+│   └── spokes/               # Specialist agents
+│       ├── instructor_agent.py    # Phase 2
+│       ├── scheduler_agent.py     # Phase 4
+│       ├── tracker_agent.py       # Phases 5, 6, 11
+│       ├── nutritionist_agent.py  # Phase 7
+│       └── planner/
+│           ├── generator_agent.py # Phase 8
+│           └── critic_agent.py    # Phase 9
+├── tools/
+│   ├── firestore_tools.py    # Custom function tools (Phases 3+)
+│   └── external_api_tools.py # API wrappers (Phase 7+)
+├── core/
+│   ├── database.py           # Firestore client (Phase 3+)
+│   └── sessions.py           # DatabaseSessionService (Phase 4+)
+├── docs/
+├── evals/
+└── .env.local
+```
+
+**Key Points**:
+- `agents/agent.py` - Required by ADK web command, must export `root_agent` variable
+- `agents/.env` - Symlink to `.env.local` (ADK auto-discovers and loads env vars from agent dir)
+- `agents/prompts/` - Centralized package for all agent instruction prompts (Python constants)
+- Prompts are Python modules with `PROMPT` constants, imported directly (no file I/O)
+- Phase-specific agents added to `agents/spokes/` as we progress
 
 ---

@@ -1,0 +1,10 @@
+# Google Agent Development Kit
+google-adk>=0.1.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# Additional dependencies will be added in later phases:
+# - firebase-admin (Phase 3: Firestore)
+# - google-cloud-calendar (Phase 4: MCP)
+# - requests (Phase 7: Nutritionix API)

@@ -60,11 +60,14 @@ See [docs/roadmap.md](docs/roadmap.md) for the complete development roadmap.
      GOOGLE_API_KEY=your_api_key_here
      ```
    - **Important**: Never commit `.env.local` (already in .gitignore)
+   - **Note**: `agents/.env` is a symlink to `.env.local` (required by ADK)
 
 5. **Run the agent**:
    ```bash
    adk web --log_level DEBUG
    ```
+
+   The web interface will be available at `http://localhost:8000`
 
 For phase-specific setup instructions, see `docs/phases/phase-{N}.md`.
 
