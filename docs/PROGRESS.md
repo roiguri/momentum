@@ -66,8 +66,8 @@ This project demonstrates **8 of 11** key concepts from the course:
 
 ## Current Status
 
-**Active Phase**: Phase 1 - Chat-Planner (MVA) - Final Testing
-**Overall Progress**: 1/11 phases completed (9%)
+**Active Phase**: Phase 2 - Instructor (Adding a Spoke) - Planning
+**Overall Progress**: 2/11 phases completed (18%)
 
 ---
 
@@ -76,7 +76,7 @@ This project demonstrates **8 of 11** key concepts from the course:
 | Phase | Name | Status | Started | Completed | Demo-able? |
 |-------|------|--------|---------|-----------|------------|
 | 0 | Project Setup | ✅ Complete | 2025-11-16 | 2025-11-16 | N/A |
-| 1 | Chat-Planner (MVA) | 🟡 In Progress | 2025-11-16 | 2025-11-17 (pending eval) | ✅ Yes |
+| 1 | Chat-Planner (MVA) | ✅ Complete | 2025-11-16 | 2025-11-17 | ✅ Yes |
 | 2 | Instructor (Adding a Spoke) | ⚪ Not Started | - | - | - |
 | 3 | Plan Persister (First Memory) | ⚪ Not Started | - | - | - |
 | 4 | Scheduler (LRO & Calendar) | ⚪ Not Started | - | - | - |
@@ -124,16 +124,16 @@ This project demonstrates **8 of 11** key concepts from the course:
 
 ---
 
-## Phase 1: Chat-Planner (MVA) 🟡
+## Phase 1: Chat-Planner (MVA) ✅
 
 **Goal**: Build a working conversational agent that generates personalized workout plans
 
 **Tasks**:
 - [x] Task 1: Project Setup (requirements.txt, .env.example, agent structure)
 - [x] Task 2: Create WellnessChiefAgent with instruction prompt
-- [ ] Task 3: Session State Management ⚠️ **DEFERRED** (see Decisions Made)
+- [ ] Task 3: Session State Management ⚠️ **DEFERRED** (see Session State Decision)
 - [x] Task 4: Plan Generation Logic with flexible timeline
-- [ ] Task 5: Testing & Evaluation (in progress)
+- [ ] Task 5: Testing & Evaluation ⚠️ **DEFERRED** (see Evaluation Decision)
 
 **Technical Decisions**:
 - **ADK Structure**: Uses `agents/agent.py` with `root_agent` export (ADK requirement)
@@ -149,9 +149,10 @@ This project demonstrates **8 of 11** key concepts from the course:
 4. Updated to latest stable Gemini model (2.5 Flash)
 5. Enhanced prompt to support variable-length programs (not just 4 weeks)
 6. Created `docs/prompt-engineering.md` to track prompt refinements
+7. Added retry configuration for API resilience (429, 500, 503, 504 errors)
 
 **Session State Management Decision (Task 3)**:
-- **Status**: Deferred to later phase
+- **Status**: Deferred to Phase 3 or 4
 - **Rationale**:
   - Gemini 2.5 has 1M token context window - sufficient for Phase 1 conversations
   - Session state will be added when it serves a **different purpose** from permanent memory
@@ -161,17 +162,34 @@ This project demonstrates **8 of 11** key concepts from the course:
 - **Future Implementation**: Will add session state in Phase 3 or 4 when implementing Firestore integration
 - **Note**: This is explicitly separate from the Memory Bank and permanent storage features
 
+**Evaluation Decision (Task 5)**:
+- **Status**: Deferred to Phase 2 or later
+- **Rationale**:
+  - ADK's `response_match_score` uses semantic similarity (embeddings), not substring matching
+  - Minimal keyword-based expected responses result in low scores even when agent behavior is correct
+  - Best practice is to export actual conversations from `adk web` UI as evalsets
+  - Hand-written evalsets require full, realistic expected responses for semantic similarity to work
+- **Current Testing Approach**: Manual testing via `adk web` interface
+- **Future Implementation**:
+  - Use `adk web` to test conversations interactively
+  - Export successful conversations as evalsets using web UI export feature
+  - Create evaluation sets with realistic expected responses
+  - Implement in Phase 2 alongside InstructorAgent testing
+- **Decision Date**: 2025-11-17
+
 **Blockers**: None
 
 **Started**: 2025-11-16
-**Completed**: 2025-11-17 (pending evaluation set completion)
+**Completed**: 2025-11-17
 
 **Notes**:
-- Core agent functionality complete and demo-able
+- Core agent functionality complete and demo-able via `adk web`
 - Agent successfully asks clarifying questions before generating plans
 - Plans are personalized based on goal, experience level, availability, and timeline
 - Prompt engineering best practices documented
-- Ready for evaluation set creation
+- Retry configuration added for API failures
+- Manual testing via web UI is the current validation approach
+- Automated evaluation deferred to Phase 2 (will use web UI conversation exports)
 
 ---
 
@@ -225,6 +243,7 @@ This project demonstrates **8 of 11** key concepts from the course:
 | 2025-11-17 | Use `gemini-2.5-flash` model | Latest stable Gemini model as of implementation date |
 | 2025-11-17 | Remove hardcoded 4-week timeline | Users need flexibility for different program lengths and goal dates |
 | 2025-11-17 | Defer Task 3 (Session State) to later phase | 1M token context sufficient for Phase 1; will add when it serves different purpose from permanent memory |
+| 2025-11-17 | Defer Task 5 (Evaluation) to Phase 2+ | ADK eval requires web UI conversation exports for realistic expected responses; hand-written evalsets fail semantic similarity scoring |
 
 ---
 

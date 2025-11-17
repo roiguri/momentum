@@ -56,3 +56,6 @@ Thumbs.db
 
 # Project specific
 .agent_engine_config.json
+
+# ADK generated files
+agents/.adk/

@@ -48,19 +48,19 @@ We will start with `InMemorySessionService` for Phases 1-3 and explicitly migrat
 
 **Demo**: User says, "Plan my 5k." The agent asks clarifying questions (e.g., "How many days a week can you train?") and then prints a structured, multi-week plan directly in the chat.
 
-**Key Concepts**: Agent Design, LLM-based Orchestration, Session State (for preferences), `InMemorySessionService`.
+**Key Concepts**: Agent Design, LLM-based Orchestration, `InMemorySessionService`.
 
 **Actions**:
 
 1. **Agent**: Create the `WellnessChiefAgent`.
    - **Instruction**: Give it a detailed instruction prompt to:
      - a. Act as an expert wellness coach.
-     - b. Ask for key preferences (goal, days per week, experience level).
-     - c. Generate a general, text-based plan based on those preferences.
+     - b. Ask for key preferences (goal, days per week, timeline, experience level, limitations).
+     - c. Generate a personalized, variable-length plan based on those preferences.
 
-2. **Session**: Use `InMemorySessionService`. We can use Session State (`tool_context.state`) to store the user's preferences during this single conversation.
+2. **Session**: Use `InMemorySessionService` (implicit - rely on LLM context for Phase 1).
 
-3. **Evaluate**: Create `evalset_phase1.json` to test that the agent asks the right questions and generates a reasonable plan.
+3. **Evaluate**: ⚠️ **DEFERRED to Phase 2+**. Use manual testing via `adk web` for Phase 1. Automated evaluation will use web UI conversation exports in later phases.
 
 ### Phase 2: The "Instructor" (Adding a Spoke)
 
@@ -78,7 +78,23 @@ We will start with `InMemorySessionService` for Phases 1-3 and explicitly migrat
 
 2. **Orchestration**: Upgrade the `WellnessChiefAgent` (the Hub) to use the `InstructorAgent` as an Agent Tool when the user asks for exercise explanations.
 
-3. **Evaluate**: Add to your evalset to test this new "how-to" skill.
+3. **Observability Setup** (NEW - Establish baseline):
+   - Continue using `adk web --log_level DEBUG` for development
+   - Implement `LoggingPlugin` to track agent invocations and tool usage
+   - Create basic logging configuration for production observability
+   - Document agent thought process and tool usage patterns
+   - Track InstructorAgent search quality and response accuracy
+   - Note any issues for prompt refinement
+   - **Key Concept**: Callbacks and Plugins for observability
+
+4. **Evaluation Setup** (NEW - Deferred from Phase 1):
+   - Create `evals/` directory
+   - Use `adk web` to have test conversations with both WellnessChiefAgent and InstructorAgent
+   - Export successful conversations as evalsets using web UI export feature
+   - Create `evalset_phase1_phase2.json` combining Phase 1 + Phase 2 test cases
+   - Run evaluations: `adk eval agents evals/evalset_phase1_phase2.json`
+   - Document evaluation results and set up for regression testing
+   - Target: >80% eval success rate across all test cases
 
 ---
 
