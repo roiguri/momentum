@@ -66,7 +66,7 @@ This project demonstrates **8 of 11** key concepts from the course:
 
 ## Current Status
 
-**Active Phase**: Phase 2 - Instructor (Adding a Spoke) - Planning
+**Active Phase**: Phase 4 - Sessions, Memory & LROs (Combined) - Planning
 **Overall Progress**: 2/11 phases completed (18%)
 
 ---
@@ -77,9 +77,9 @@ This project demonstrates **8 of 11** key concepts from the course:
 |-------|------|--------|---------|-----------|------------|
 | 0 | Project Setup | ✅ Complete | 2025-11-16 | 2025-11-16 | N/A |
 | 1 | Chat-Planner (MVA) | ✅ Complete | 2025-11-16 | 2025-11-17 | ✅ Yes |
-| 2 | Instructor (Adding a Spoke) | ⚪ Not Started | - | - | - |
-| 3 | Plan Persister (First Memory) | ⚪ Not Started | - | - | - |
-| 4 | Scheduler (LRO & Calendar) | ⚪ Not Started | - | - | - |
+| 2 | Instructor (Adding a Spoke) | ✅ Complete | 2025-11-18 | 2025-11-18 | ✅ Yes |
+| 3 | ~~Plan Persister~~ | ⚠️ **SKIPPED** | - | - | - |
+| 4 | Sessions, Memory & LROs | ⚪ Not Started | - | - | - |
 | 5 | Logger (Detailed & Adherence) | ⚪ Not Started | - | - | - |
 | 6 | Editor (Plan Modification) | ⚪ Not Started | - | - | - |
 | 7 | Nutritionist (Core Feature) | ⚪ Not Started | - | - | - |
@@ -193,6 +193,45 @@ This project demonstrates **8 of 11** key concepts from the course:
 
 ---
 
+## Phase 2: Instructor (Adding a Spoke) ✅
+
+**Goal**: Add InstructorAgent to explain exercises and provide instructional resources
+
+**Tasks**:
+- [x] Create InstructorAgent with Google Search tool
+- [x] Integrate InstructorAgent into WellnessChiefAgent via AgentTool
+- [x] Test hub-and-spoke pattern with exercise questions
+- [ ] Implement observability (LoggingPlugin) ⚠️ **DEFERRED to Phase 5+**
+- [ ] Create evaluation sets ⚠️ **DEFERRED to Phase 5+**
+
+**Technical Decisions**:
+- **Hub-and-Spoke Pattern**: WellnessChiefAgent uses InstructorAgent as AgentTool
+- **LLM-Based Orchestration**: Chief agent decides when to delegate to InstructorAgent
+- **Google Search Integration**: InstructorAgent uses built-in `google_search` tool
+- **Output Key**: Added `output_key="exercise_instructions"` for explicit state tracking
+- **Observability Deferral**: Decided to defer logging/observability to Phase 5 when we have TrackerAgent
+- **Evaluation Deferral**: Will implement comprehensive evaluation after memory/persistence features
+
+**Key Refinements**:
+1. Fixed AgentTool integration issues with explicit prompt instructions
+2. Resolved empty response issue by adding "present COMPLETE response" guidance
+3. Created modular spoke agent structure in `agents/spokes/` directory
+4. Instruction prompt emphasizes single comprehensive responses (no partial answers)
+
+**Blockers**: None
+
+**Started**: 2025-11-18
+**Completed**: 2025-11-18
+
+**Notes**:
+- Hub-and-spoke architecture proven and working
+- InstructorAgent successfully provides exercise guidance with YouTube videos
+- Multi-agent orchestration via AgentTool demonstrated
+- Ready for persistence layer (Phase 4)
+- Observability and evaluation deferred to reduce scope and maintain velocity
+
+---
+
 ## Development Workflow
 
 ### Phase Workflow
@@ -244,13 +283,42 @@ This project demonstrates **8 of 11** key concepts from the course:
 | 2025-11-17 | Remove hardcoded 4-week timeline | Users need flexibility for different program lengths and goal dates |
 | 2025-11-17 | Defer Task 3 (Session State) to later phase | 1M token context sufficient for Phase 1; will add when it serves different purpose from permanent memory |
 | 2025-11-17 | Defer Task 5 (Evaluation) to Phase 2+ | ADK eval requires web UI conversation exports for realistic expected responses; hand-written evalsets fail semantic similarity scoring |
+| 2025-11-18 | Defer Phase 2 observability to Phase 5+ | Focus on core features first; bundle observability with TrackerAgent logging |
+| 2025-11-18 | Defer Phase 2 evaluation to Phase 5+ | Implement comprehensive evaluation after memory/persistence foundation |
+| 2025-11-18 | **SKIP Phase 3 entirely** | Day 3 course materials show DatabaseSessionService MUST come before custom persistence; ADK Memory system replaces custom Firestore tools for conversation data |
+| 2025-11-18 | Combine Sessions + Memory + LROs into Phase 4 | Follow course best practices: DatabaseSessionService → InMemoryMemoryService → LROs in single phase |
+| 2025-11-18 | Use ADK Memory for conversation context | Automated consolidation, semantic search, cross-session recall; reserve Firestore for structured fitness data only |
+| 2025-11-18 | Migrate to DatabaseSessionService in Phase 4 | Required prerequisite for LROs; InMemorySessionService insufficient for production |
+
+---
+
+## Phase 3: Plan Persister ⚠️ **SKIPPED**
+
+**Status**: Skipped based on Day 3 course learnings
+
+**Original Goal**: Save workout plans to Firestore with custom tools
+
+**Why Skipped**:
+1. **DatabaseSessionService Required First**: Course materials (Day 3a) show DatabaseSessionService migration MUST happen before any persistent storage implementation
+2. **ADK Memory Replaces Custom Tools**: Day 3b demonstrates that `MemoryService` with automatic consolidation provides better architecture than custom Firestore tools for conversation/preference data
+3. **Avoid Duplication**: Custom Firestore tools would duplicate what ADK's memory system already provides
+4. **Better Separation of Concerns**:
+   - **ADK Memory**: User preferences, conversation context, exercise history (automated, semantic search)
+   - **Firestore**: Structured workout plans, nutrition logs, analytics (when needed in Phase 5-7)
+
+**New Approach**:
+- Phase 4 implements DatabaseSessionService + InMemoryMemoryService + automated memory callbacks
+- Firestore added later (Phase 5-7) for structured fitness data that requires specific schema/queries
+- Follows course best practices: Sessions → Memory → Structured Storage
+
+**Decision Date**: 2025-11-18
 
 ---
 
 ## Next Steps
 
-1. Decide: Keep best practices in separate repo or move to `docs/best-practices/`?
-2. Create detailed Phase 1 implementation plan
-3. Get approval on Phase 1 plan
-4. Complete initial repository commit
-5. Begin Phase 1 implementation
+1. ✅ Review Day 3 course notebooks for sessions/memory best practices
+2. ✅ Update PROGRESS.md with Phase 2 completion
+3. ✅ Document architectural pivot (skip Phase 3)
+4. 🔄 Create Phase 4 implementation plan (Sessions + Memory + LROs combined)
+5. 🔄 Update roadmap.md with revised architecture

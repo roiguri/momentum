@@ -22,16 +22,35 @@ We will add features in logical, self-contained blocks. Each phase builds on the
 - **Evaluation**: We will create and add to our `evalset.json` at the end of each phase to prevent regressions.
 
 ### Session Management
-We will start with `InMemorySessionService` for Phases 1-3 and explicitly migrate to `DatabaseSessionService` in Phase 4 as a prerequisite for the Long-Running Operation (LRO).
+- **Phases 1-2**: `InMemorySessionService` for development
+- **Phase 4+**: `DatabaseSessionService` (SQLite) - **Required for LROs**
+- **Migration Rationale** (2025-11-18): Day 3 course materials show DatabaseSessionService is mandatory prerequisite for Long-Running Operations
 
-**Note on Session State (Task 3 Deferral)**:
-- **Phase 1 Implementation Decision** (2025-11-17): Explicit session state management (using `tool_context.state`) has been deferred to Phase 3 or 4
-- **Rationale**: Gemini 2.5 Flash has 1M token context window, sufficient for Phase 1 conversation context without explicit state management
-- **Clarification**: Session state serves a **different purpose** from permanent memory:
-  - **Session State** = temporary conversation context within single session (user preferences before saving)
-  - **Permanent Memory** = historical data across sessions stored in Firestore (user profile, past plans, progress)
-- **Future Implementation**: Will add explicit session state when implementing Firestore integration (Phase 3+), where it will track temporary conversation flow state and user preferences before permanent storage
-- **Complementary Features**: Session state and Memory Bank are not alternatives - they work together for different purposes
+**Session State**:
+- **Implemented in Phase 4** alongside DatabaseSessionService
+- **Purpose**: Temporary conversation-scoped data (current workout intensity, draft preferences)
+- **Complementary to Memory**: Session state is temporary, Memory is permanent
+- **Best Practice**: Use key prefixes (`user:`, `temp:`, `app:`)
+
+### Memory Management (Updated 2025-11-18)
+
+**Original Plan**: Custom Firestore tools for plan persistence (Phase 3)
+
+**New Approach** (based on Day 3 course learnings):
+- **Phase 4**: ADK Memory system (InMemoryMemoryService)
+  - Automatic session→memory consolidation via callbacks
+  - Cross-session recall with `preload_memory` tool
+  - Keyword matching (sufficient for development)
+
+- **Phase 11**: Migrate to Vertex AI Memory Bank
+  - LLM-powered consolidation (extract key facts)
+  - Semantic search (meaning-based retrieval)
+  - Cloud persistence
+
+**Firestore Role** (deferred to Phase 5-7):
+- **Structured fitness data only**: Workout logs, nutrition records, analytics
+- **Not for**: Conversation history, user preferences, general context
+- **Rationale**: Avoid duplication with ADK Memory; use right tool for each job
 
 ### Database & Multiple Goals
 
@@ -98,52 +117,75 @@ We will start with `InMemorySessionService` for Phases 1-3 and explicitly migrat
 
 ---
 
-### Phase 3: The "Plan Persister" (First Memory)
+### ~~Phase 3: The "Plan Persister"~~ ⚠️ **SKIPPED**
 
-**Goal**: Save the agent's generated plan to our Long-Term Memory (Firestore). This is a crucial step for all future phases.
+**Status**: Skipped based on Day 3 course learnings (2025-11-18)
 
-**Demo**: After the plan is generated (from Phase 1), the agent asks, "Should I save this plan to your profile?" The user says "yes," and the plan (as JSON) is saved to Firestore.
+**Why Skipped**:
+- DatabaseSessionService must be implemented **before** custom persistence layers
+- ADK Memory system provides better architecture than custom Firestore tools for conversation data
+- Memory consolidation, semantic search, and cross-session recall built-in
+- Avoids duplication between custom tools and ADK's memory features
 
-**Key Concepts**: Long-Term Memory (Firestore), Function Tools (Custom).
+**New Approach**:
+- Phase 4 implements ADK Memory (InMemoryMemoryService → Vertex AI Memory Bank later)
+- Firestore deferred to Phase 5-7 for **structured fitness data only** (workout logs, nutrition, analytics)
+- Clear separation: ADK Memory for preferences/context, Firestore for structured records
 
-**Actions**:
-
-1. **Firebase Setup**: Create the new Firebase project with schemas for `user_profile` (to hold `active_goal_id`) and `plan` (with `goal_id`, `week`, `day`, `exercises`, `status: "proposed"`).
-
-2. **New Tools (Custom)**:
-   - `save_plan_to_firestore(plan_json, goal_id)` - Writes the plan to the `plan` collection.
-   - `set_active_goal(goal_id)` - Updates the `user_profile` doc.
-
-3. **Orchestration**: Upgrade the `WellnessChiefAgent` to use these tools after the user confirms they like the generated plan.
-
-4. **Evaluate**: Add tests for saving and retrieving a plan.
+**See**: `docs/PROGRESS.md` Phase 3 section for detailed rationale
 
 ---
 
-### Phase 4: The "Scheduler" (LRO & Calendar)
+### Phase 4: Sessions, Memory & LROs (Combined)
 
-**Goal**: Add the Google Calendar integration, protected by the "must-have" User Approval Workflow.
+**Goal**: Establish production-ready persistence with DatabaseSessionService, Memory consolidation, and Long-Running Operations for calendar scheduling.
 
-**Demo**: Agent asks, "I have saved your 12-week plan. Do you also approve me adding this to your Google Calendar?" The user says "yes," and their Google Calendar is populated.
+**Demo**:
+1. User creates plan → automatically saved to memory across sessions
+2. User asks "What was my goal?" in new session → agent recalls from memory
+3. User approves calendar scheduling → LRO workflow with confirmation
 
-**Key Concepts**: Long-Running Operations, Session Service Migration, MCP Tools (Google Calendar).
+**Key Concepts**:
+- Session Management (DatabaseSessionService migration)
+- Long-term Memory (InMemoryMemoryService with callbacks)
+- Long-Running Operations (LRO with user approval)
+- MCP Tools (Google Calendar)
+- Context Engineering (session state + memory)
+
+**Why Combined**: These features form a logical dependency chain following course best practices (Day 3 sessions → memory → LROs).
 
 **Actions**:
 
-1. **CRITICAL (Session)**: Migrate the Runner from `InMemorySessionService` to `DatabaseSessionService(db_url="sqlite:///sessions.db")`. This is mandatory for the LRO to work.
+1. **Session Migration**: Migrate from `InMemorySessionService` to `DatabaseSessionService(db_url="sqlite:///data/wellness_sessions.db")`. Required for LROs.
 
-2. **New Agent**: Create the `SchedulerAgent` (Spoke).
-   - **Tool (MCP)**: Connect the `SchedulerAgent` to the Google Calendar MCP server.
+2. **Memory System**:
+   - Initialize `InMemoryMemoryService`
+   - Create `auto_save_to_memory` callback for automatic session→memory transfer
+   - Add `preload_memory` tool to WellnessChiefAgent for automatic recall
+   - Test cross-session memory retrieval
 
-3. **Implement LRO (Approval)**:
-   - Upgrade the `WellnessChiefAgent`'s logic. After saving the plan (Phase 3), it will immediately call `tool_context.request_confirmation(...)` to ask for calendar approval. This pauses the agent.
+3. **Session State**:
+   - Implement `save_temp_preference` and `get_temp_preference` tools
+   - Use for temporary conversation-scoped data (complementary to long-term memory)
+   - Best practice: `user:`, `temp:`, `app:` key prefixes
 
-4. **Connect Workflow**:
-   - When the user's "yes" response resumes the agent:
-     - The `WellnessChiefAgent` calls the `SchedulerAgent` (as an Agent Tool).
-     - The `SchedulerAgent` reads the plan from Firestore (Tool: `get_plan(goal_id)`) and books the events in the calendar, updating the plan docs to `status: "scheduled"`.
+4. **SchedulerAgent (Spoke)**:
+   - Create agent with Google Calendar MCP tool
+   - Handles calendar event creation for workout plans
 
-5. **Evaluate**: Add tests for the approval flow (both "yes" and "no" paths).
+5. **LRO Implementation**:
+   - Create `request_calendar_approval` tool using `tool_context.request_confirmation()`
+   - Workflow: Plan creation → Approval request → LRO suspend → User decision → LRO resume
+   - If approved: delegate to SchedulerAgent
+   - If declined: save plan to memory only
+
+6. **Testing**:
+   - Session persistence across restarts
+   - Memory recall from previous sessions
+   - LRO approval/rejection workflows
+   - Multi-agent integration (Instructor + Scheduler)
+
+**Reference**: `docs/phases/phase-4.md` for detailed implementation plan
 
 ---
 
