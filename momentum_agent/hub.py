@@ -17,10 +17,23 @@ Session Management: InMemorySessionService (will migrate to Database in Phase 4)
 
 from google.adk.agents import LlmAgent
 from google.adk.models import Gemini
-from google.adk.tools import AgentTool
+from google.adk.tools import AgentTool, preload_memory
 from .prompts import WELLNESS_CHIEF_PROMPT
 from .config import RETRY_CONFIG
-from .spokes import create_instructor_agent
+from .spokes.instructor import create_instructor_agent
+from .tools.plan_tools import (
+    save_plan_tool,
+    load_plan_tool,
+    get_current_week_plan_tool,
+    list_user_plans_tool
+)
+
+
+async def auto_save_to_memory(callback_context):
+    """Automatically save session to memory after each agent turn."""
+    await callback_context._invocation_context.memory_service.add_session_to_memory(
+        callback_context._invocation_context.session
+    )
 
 
 def create_wellness_chief_agent() -> LlmAgent:
@@ -31,5 +44,13 @@ def create_wellness_chief_agent() -> LlmAgent:
         description="Main wellness coaching agent that creates personalized workout plans and provides exercise instruction",
         model=Gemini(model="gemini-2.5-flash", retry_options=RETRY_CONFIG),
         instruction=WELLNESS_CHIEF_PROMPT,
-        tools=[AgentTool(agent=instructor_agent)],
+        tools=[
+            AgentTool(agent=instructor_agent),
+            preload_memory,
+            save_plan_tool,
+            load_plan_tool,
+            get_current_week_plan_tool,
+            list_user_plans_tool,
+        ],
+        after_agent_callback=auto_save_to_memory,
     )

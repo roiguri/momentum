@@ -136,54 +136,77 @@ We will add features in logical, self-contained blocks. Each phase builds on the
 
 ---
 
-### Phase 4: Sessions, Memory & LROs (Combined)
+### Phase 4: Sessions, Memory & LROs (Partial - Goals 1-3 Complete)
 
-**Goal**: Establish production-ready persistence with DatabaseSessionService, Memory consolidation, and Long-Running Operations for calendar scheduling.
+**Goal**: Establish production-ready persistence with DatabaseSessionService, Memory consolidation, and Exercise Plan Storage.
+
+**Status**: ✅ Goals 1-3 Complete | ⏸️ Goal 4 (LROs) Deferred
 
 **Demo**:
-1. User creates plan → automatically saved to memory across sessions
-2. User asks "What was my goal?" in new session → agent recalls from memory
-3. User approves calendar scheduling → LRO workflow with confirmation
+1. ✅ User creates plan → saved to persistent storage
+2. ✅ User asks "What was my goal?" in new session → agent recalls from memory
+3. ✅ User asks "save my plan" → plan persists across restarts
+4. ⏸️ User approves calendar scheduling → LRO workflow (deferred)
 
 **Key Concepts**:
-- Session Management (DatabaseSessionService migration)
-- Long-term Memory (InMemoryMemoryService with callbacks)
-- Long-Running Operations (LRO with user approval)
-- MCP Tools (Google Calendar)
-- Context Engineering (session state + memory)
+- ✅ Session Management (DatabaseSessionService migration)
+- ✅ Long-term Memory (InMemoryMemoryService with callbacks)
+- ✅ Plan Storage (File-based with Firestore-compatible schema)
+- ⏸️ Long-Running Operations (LRO with user approval) - Deferred
+- ⏸️ MCP Tools (Google Calendar) - Deferred
 
-**Why Combined**: These features form a logical dependency chain following course best practices (Day 3 sessions → memory → LROs).
+**Completed Actions**:
 
-**Actions**:
+1. ✅ **Session Migration**: Migrated to `DatabaseSessionService(db_url="sqlite:///data/wellness_sessions.db")`
 
-1. **Session Migration**: Migrate from `InMemorySessionService` to `DatabaseSessionService(db_url="sqlite:///data/wellness_sessions.db")`. Required for LROs.
+2. ✅ **Memory System**:
+   - Initialized `InMemoryMemoryService`
+   - Created `auto_save_to_memory` callback for automatic session→memory transfer
+   - Added `preload_memory` tool to WellnessChiefAgent
+   - Verified cross-session memory retrieval
 
-2. **Memory System**:
-   - Initialize `InMemoryMemoryService`
-   - Create `auto_save_to_memory` callback for automatic session→memory transfer
-   - Add `preload_memory` tool to WellnessChiefAgent for automatic recall
-   - Test cross-session memory retrieval
+3. ✅ **Plan Storage System**:
+   - Created 4 tools: `save_plan`, `load_plan`, `get_current_week_plan`, `list_user_plans`
+   - Implemented Firestore-compatible JSON schema (matches roadmap lines 467-476)
+   - File storage in `data/plans/{user_id}/` directory
+   - **Migration Path to Firestore (Phase 5-7)**:
+     * Current: File I/O with JSON
+     * Future: Firestore CRUD with same schema
+     * Migration: Replace file operations in `plan_tools.py`, keep same interfaces
+     * Zero data transformation needed (schema already compatible)
 
-3. **Session State**:
-   - Implement `save_temp_preference` and `get_temp_preference` tools
-   - Use for temporary conversation-scoped data (complementary to long-term memory)
-   - Best practice: `user:`, `temp:`, `app:` key prefixes
+**Deferred Actions**:
 
-4. **SchedulerAgent (Spoke)**:
-   - Create agent with Google Calendar MCP tool
-   - Handles calendar event creation for workout plans
+4. ⏸️ **Session State**: Deferred (not needed for current functionality)
 
-5. **LRO Implementation**:
-   - Create `request_calendar_approval` tool using `tool_context.request_confirmation()`
-   - Workflow: Plan creation → Approval request → LRO suspend → User decision → LRO resume
-   - If approved: delegate to SchedulerAgent
-   - If declined: save plan to memory only
+5. ⏸️ **SchedulerAgent (Spoke)**: Deferred to future phase
 
-6. **Testing**:
-   - Session persistence across restarts
-   - Memory recall from previous sessions
-   - LRO approval/rejection workflows
-   - Multi-agent integration (Instructor + Scheduler)
+6. ⏸️ **LRO Implementation**: Deferred to future phase
+
+**Migration Documentation**:
+
+**Plan Storage Migration (Phase 5-7)**:
+```python
+# Current (Phase 4 - File-based)
+def save_plan(plan_data: dict) -> str:
+    path = Path(f"data/plans/{plan_data['user_id']}/{plan_id}.json")
+    with open(path, 'w') as f:
+        json.dump(plan_data, f)
+    return plan_id
+
+# Future (Phase 5-7 - Firestore)
+def save_plan(plan_data: dict) -> str:
+    db = get_firestore_client()
+    doc_ref = db.collection('plan').add(plan_data)
+    return doc_ref.id
+```
+
+**Migration Steps**:
+1. Create `core/database.py` with Firestore client initialization
+2. Update `agents/tools/plan_tools.py`: Replace file I/O with Firestore CRUD
+3. Keep same function signatures (no tool interface changes)
+4. Keep same JSON schema (already Firestore-compatible)
+5. Run one-time migration script to transfer existing JSON files to Firestore
 
 **Reference**: `docs/phases/phase-4.md` for detailed implementation plan
 

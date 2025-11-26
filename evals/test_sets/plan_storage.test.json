@@ -1,0 +1,47 @@
+[
+  {
+    "query": "Create a 4-week strength training plan for me.",
+    "expected_tool_use": [],
+    "reference": "for you, could you tell me a bit more about your current fitness level and what you have available? 1. How many days per week can you commit to training? 2. What's your current strength training experience level?",
+    "follow_up": {
+      "query": "3 days a week, beginner level. No injuries.",
+      "expected_tool_use": [],
+      "reference": "Here is a 4-week strength training plan designed for you",
+      "follow_up": {
+        "query": "That looks great, please save it.",
+        "expected_tool_use": [
+          {
+            "tool_name": "save_plan",
+            "tool_input": {
+              "goal_description": "strength training",
+              "program_length_weeks": 4
+            }
+          }
+        ],
+        "reference": "I've saved your 4-week strength training plan"
+      }
+    }
+  },
+  {
+    "query": "What workout plans do I have saved?",
+    "expected_tool_use": [
+      {
+        "tool_name": "list_user_plans",
+        "tool_input": {}
+      }
+    ],
+    "reference": "You have a few workout plans saved! Here's what I found:\n\n*   **build_foundational_strength_an_week1**: This plan is for building foundational strength and mastering basic movement patterns. It's currently in Week 1 of a 4-week program and is in a \"proposed\" status.\n*   **run_a_5k_week1**: This plan is for running a 5k. It's in Week 1 of an 8-week program and is \"active.\"\n*   **beginner_strength_week1**: This is a beginner strength plan, currently in Week 1 of 4, and is marked as \"completed.\""
+  },
+  {
+    "query": "What are my exercises for this week? (week 2)",
+    "expected_tool_use": [
+      {
+        "tool_name": "get_current_week_plan",
+        "tool_input": {
+          "week_number": 2
+        }
+      }
+    ],
+    "reference": "**Week 2 Workout Plan**\n\nGoal: Run a 5k\n\n**Week 2: Building Endurance**\nDay 1: 25 min run\nDay 2: Rest\nDay 3: 25 min run\nDay 4: Rest\nDay 5: 30 min run\nDay 6: Cross-training (30 min)\nDay 7: Rest"
+  }
+]

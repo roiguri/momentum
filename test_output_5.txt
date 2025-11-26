@@ -1,0 +1,315 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.1, pluggy-1.6.0 -- /home/roiguri/projects/private/momentum/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/roiguri/projects/private/momentum
+configfile: pytest.ini
+plugins: asyncio-1.3.0, anyio-4.11.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items / 3 deselected / 1 selected
+
+evals/test_eval.py::test_plan_storage FAILED                             [100%]
+
+=================================== FAILURES ===================================
+______________________________ test_plan_storage _______________________________
+
+    @pytest.mark.asyncio
+    async def test_plan_storage():
+        """Test workout plan creation and storage."""
+>       await AgentEvaluator.evaluate(
+            "momentum_agent",
+            os.path.join(os.path.dirname(__file__), "test_sets/plan_storage.test.json"),
+            num_runs=1,
+        )
+
+evals/test_eval.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+venv/lib/python3.12/site-packages/google/adk/evaluation/agent_evaluator.py:241: in evaluate
+    await AgentEvaluator.evaluate_eval_set(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+agent_module = 'momentum_agent'
+eval_set = EvalSet(eval_set_id='0ff94889-15c2-4e32-95af-2457e7ce1723', name='0ff94889-15c2-4e32-95af-2457e7ce1723', description=N..., creation_timestamp=1764106457.6474488, rubrics=None, final_session_state={})], creation_timestamp=1764106457.6474657)
+criteria = None
+eval_config = EvalConfig(criteria={'tool_trajectory_avg_score': 1.0, 'response_match_score': 0.5}, user_simulator_config=None)
+num_runs = 1, agent_name = None, print_detailed_results = True
+
+    @staticmethod
+    async def evaluate_eval_set(
+        agent_module: str,
+        eval_set: EvalSet,
+        criteria: Optional[dict[str, float]] = None,
+        eval_config: Optional[EvalConfig] = None,
+        num_runs: int = NUM_RUNS,
+        agent_name: Optional[str] = None,
+        print_detailed_results: bool = True,
+    ):
+      """Evaluates an agent using the given EvalSet.
+    
+      Args:
+        agent_module: The path to python module that contains the definition of
+          the agent. There is convention in place here, where the code is going to
+          look for 'root_agent' or `get_agent_async` in the loaded module.
+        eval_set: The eval set.
+        criteria: Evaluation criteria, a dictionary of metric names to their
+          respective thresholds. This field is deprecated.
+        eval_config: The evaluation config.
+        num_runs: Number of times all entries in the eval dataset should be
+          assessed.
+        agent_name: The name of the agent, if trying to evaluate something other
+          than root agent. If left empty or none, then root agent is evaluated.
+        print_detailed_results: Whether to print detailed results for each metric
+          evaluation.
+      """
+      if criteria:
+        logger.warning(
+            "`criteria` field is deprecated and will be removed in future"
+            " iterations. For now, we will automatically map values in `criteria`"
+            " to `eval_config`, but you should move to using `eval_config` field."
+        )
+        base_criteria = {
+            k: BaseCriterion(threshold=v) for k, v in criteria.items()
+        }
+        eval_config = EvalConfig(criteria=base_criteria)
+    
+      if eval_config is None:
+        raise ValueError("`eval_config` is required.")
+    
+      agent_for_eval = await AgentEvaluator._get_agent_for_eval(
+          module_name=agent_module, agent_name=agent_name
+      )
+      eval_metrics = get_eval_metrics_from_config(eval_config)
+    
+      user_simulator_provider = UserSimulatorProvider(
+          user_simulator_config=eval_config.user_simulator_config
+      )
+    
+      # Step 1: Perform evals, basically inferencing and evaluation of metrics
+      eval_results_by_eval_id = await AgentEvaluator._get_eval_results_by_eval_id(
+          agent_for_eval=agent_for_eval,
+          eval_set=eval_set,
+          eval_metrics=eval_metrics,
+          num_runs=num_runs,
+          user_simulator_provider=user_simulator_provider,
+      )
+    
+      # Step 2: Post-process the results!
+    
+      # We keep track of eval case failures, these are not infra failures but eval
+      # test failures. We track them and then report them towards the end.
+      failures: list[str] = []
+    
+      for _, eval_results_per_eval_id in eval_results_by_eval_id.items():
+        eval_metric_results = (
+            AgentEvaluator._get_eval_metric_results_with_invocation(
+                eval_results_per_eval_id
+            )
+        )
+        failures_per_eval_case = AgentEvaluator._process_metrics_and_get_failures(
+            eval_metric_results=eval_metric_results,
+            print_detailed_results=print_detailed_results,
+            agent_module=agent_name,
+        )
+    
+        failures.extend(failures_per_eval_case)
+    
+      failure_message = "Following are all the test failures."
+      if not print_detailed_results:
+        failure_message += (
+            " If you looking to get more details on the failures, then please"
+            " re-run this test with `print_detailed_results` set to `True`."
+        )
+      failure_message += "\n" + "\n".join(failures)
+>     assert not failures, failure_message
+             ^^^^^^^^^^^^
+E     AssertionError: Following are all the test failures.
+E     tool_trajectory_avg_score for None Failed. Expected 1.0, but got 0.6666666666666666.
+E     response_match_score for None Failed. Expected 0.5, but got 0.4388893331962328.
+
+venv/lib/python3.12/site-packages/google/adk/evaluation/agent_evaluator.py:193: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Summary: `EvalStatus.FAILED` for Metric: `tool_trajectory_avg_score`. Expected threshold: `1.0`, actual value: `0.6666666666666666`.
++----+-------------------+---------+-------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+
+|    | eval_status       |   score |   threshold | prompt                    | expected_response         | actual_response           | expected_tool_calls       | actual_tool_calls         |
++====+===================+=========+=============+===========================+===========================+===========================+===========================+===========================+
+|  0 | EvalStatus.PASSED |       1 |           1 | Create a 4-week strength  | for you, could you tell   | That sounds great! I can  |                           |                           |
+|    |                   |         |             | training plan for me.     | me a bit more about your  | definitely help you with  |                           |                           |
+|    |                   |         |             |                           | current fitness level and | a 4-week strength         |                           |                           |
+|    |                   |         |             |                           | what you have available?  | training plan. To make    |                           |                           |
+|    |                   |         |             |                           | 1. How many days per week | sure it's perfectly       |                           |                           |
+|    |                   |         |             |                           | can you commit to         | tailored for you, could   |                           |                           |
+|    |                   |         |             |                           | training? 2. What's your  | you tell me:  1.  How     |                           |                           |
+|    |                   |         |             |                           | current strength training | many days per week can    |                           |                           |
+|    |                   |         |             |                           | experience level?         | you commit to training?   |                           |                           |
+|    |                   |         |             |                           |                           | 2.  What's your current   |                           |                           |
+|    |                   |         |             |                           |                           | experience level with     |                           |                           |
+|    |                   |         |             |                           |                           | strength training (e.g.,  |                           |                           |
+|    |                   |         |             |                           |                           | beginner, intermediate,   |                           |                           |
+|    |                   |         |             |                           |                           | advanced)? 3.  Do you     |                           |                           |
+|    |                   |         |             |                           |                           | have any injuries, health |                           |                           |
+|    |                   |         |             |                           |                           | conditions, or equipment  |                           |                           |
+|    |                   |         |             |                           |                           | limitations I should be   |                           |                           |
+|    |                   |         |             |                           |                           | aware of?                 |                           |                           |
++----+-------------------+---------+-------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+
+|  1 | EvalStatus.PASSED |       1 |           1 | What workout plans do I   | You have a few workout    | Here are your saved       | id=None args={}           | id='adk-0592a9f6-37d3-456 |
+|    |                   |         |             | have saved?               | plans saved! Here's what  | workout plans:  - **begin | name='list_user_plans'    | f-b88f-4caf77cd3323'      |
+|    |                   |         |             |                           | I found:  *   **build_fou | ner_strength_week1**:     |                           | args={}                   |
+|    |                   |         |             |                           | ndational_strength_an_wee | Beginner Strength (Week   |                           | name='list_user_plans'    |
+|    |                   |         |             |                           | k1**: This plan is for    | 1/4, Status: completed) - |                           |                           |
+|    |                   |         |             |                           | building foundational     | **run_a_5k_week2**: Run a |                           |                           |
+|    |                   |         |             |                           | strength and mastering    | 5k (Week 2/8, Status:     |                           |                           |
+|    |                   |         |             |                           | basic movement patterns.  | proposed) -               |                           |                           |
+|    |                   |         |             |                           | It's currently in Week 1  | **5k_run_week1**: Run a   |                           |                           |
+|    |                   |         |             |                           | of a 4-week program and   | 5k (Week 1/8, Status:     |                           |                           |
+|    |                   |         |             |                           | is in a "proposed"        | active) - **build_foundat |                           |                           |
+|    |                   |         |             |                           | status. *                 | ional_strength_an_week1** |                           |                           |
+|    |                   |         |             |                           | **5k_run_week1**: This    | : Build foundational      |                           |                           |
+|    |                   |         |             |                           | plan is for running a 5k. | strength and master basic |                           |                           |
+|    |                   |         |             |                           | It's in Week 1 of an      | movement patterns. (Week  |                           |                           |
+|    |                   |         |             |                           | 8-week program and is     | 1/4, Status: proposed)    |                           |                           |
+|    |                   |         |             |                           | "active." *   **beginner_ |                           |                           |                           |
+|    |                   |         |             |                           | strength_week1**: This is |                           |                           |                           |
+|    |                   |         |             |                           | a beginner strength plan, |                           |                           |                           |
+|    |                   |         |             |                           | currently in Week 1 of 4, |                           |                           |                           |
+|    |                   |         |             |                           | and is marked as          |                           |                           |                           |
+|    |                   |         |             |                           | "completed."              |                           |                           |                           |
++----+-------------------+---------+-------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+
+|  2 | EvalStatus.FAILED |       0 |           1 | What are my exercises for | **Week 2 Workout Plan**   | It looks like you have a  | id=None                   |                           |
+|    |                   |         |             | this week? (week 2)       | Goal: Run a 5k  **Week 2: | few plans! To make sure I | args={'week_number': 2} n |                           |
+|    |                   |         |             |                           | Building Endurance** Day  | retrieve the correct      | ame='get_current_week_pla |                           |
+|    |                   |         |             |                           | 1: 25 min run Day 2: Rest | exercises for you, could  | n'                        |                           |
+|    |                   |         |             |                           | Day 3: 25 min run Day 4:  | you specify which plan    |                           |                           |
+|    |                   |         |             |                           | Rest Day 5: 30 min run    | you're referring to for   |                           |                           |
+|    |                   |         |             |                           | Day 6: Cross-training (30 | Week 2?  You have: *      |                           |                           |
+|    |                   |         |             |                           | min) Day 7: Rest          | **run_a_5k_week2**: Run a |                           |                           |
+|    |                   |         |             |                           |                           | 5k (Week 2/8, Status:     |                           |                           |
+|    |                   |         |             |                           |                           | proposed) *   You also    |                           |                           |
+|    |                   |         |             |                           |                           | have a **5k_run_week1**   |                           |                           |
+|    |                   |         |             |                           |                           | plan that's active, which |                           |                           |
+|    |                   |         |             |                           |                           | would have a Week 2. *    |                           |                           |
+|    |                   |         |             |                           |                           | And a **build_foundationa |                           |                           |
+|    |                   |         |             |                           |                           | l_strength_an_week1**     |                           |                           |
+|    |                   |         |             |                           |                           | plan that's proposed,     |                           |                           |
+|    |                   |         |             |                           |                           | which would also have a   |                           |                           |
+|    |                   |         |             |                           |                           | Week 2.  Which of these   |                           |                           |
+|    |                   |         |             |                           |                           | would you like to see for |                           |                           |
+|    |                   |         |             |                           |                           | this week?                |                           |                           |
++----+-------------------+---------+-------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+
+
+
+
+Summary: `EvalStatus.FAILED` for Metric: `response_match_score`. Expected threshold: `0.5`, actual value: `0.4388893331962328`.
++----+-------------------+----------+-------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+
+|    | eval_status       |    score |   threshold | prompt                    | expected_response         | actual_response           | expected_tool_calls       | actual_tool_calls         |
++====+===================+==========+=============+===========================+===========================+===========================+===========================+===========================+
+|  0 | EvalStatus.PASSED | 0.53211  |         0.5 | Create a 4-week strength  | for you, could you tell   | That sounds great! I can  |                           |                           |
+|    |                   |          |             | training plan for me.     | me a bit more about your  | definitely help you with  |                           |                           |
+|    |                   |          |             |                           | current fitness level and | a 4-week strength         |                           |                           |
+|    |                   |          |             |                           | what you have available?  | training plan. To make    |                           |                           |
+|    |                   |          |             |                           | 1. How many days per week | sure it's perfectly       |                           |                           |
+|    |                   |          |             |                           | can you commit to         | tailored for you, could   |                           |                           |
+|    |                   |          |             |                           | training? 2. What's your  | you tell me:  1.  How     |                           |                           |
+|    |                   |          |             |                           | current strength training | many days per week can    |                           |                           |
+|    |                   |          |             |                           | experience level?         | you commit to training?   |                           |                           |
+|    |                   |          |             |                           |                           | 2.  What's your current   |                           |                           |
+|    |                   |          |             |                           |                           | experience level with     |                           |                           |
+|    |                   |          |             |                           |                           | strength training (e.g.,  |                           |                           |
+|    |                   |          |             |                           |                           | beginner, intermediate,   |                           |                           |
+|    |                   |          |             |                           |                           | advanced)? 3.  Do you     |                           |                           |
+|    |                   |          |             |                           |                           | have any injuries, health |                           |                           |
+|    |                   |          |             |                           |                           | conditions, or equipment  |                           |                           |
+|    |                   |          |             |                           |                           | limitations I should be   |                           |                           |
+|    |                   |          |             |                           |                           | aware of?                 |                           |                           |
++----+-------------------+----------+-------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+
+|  1 | EvalStatus.PASSED | 0.60274  |         0.5 | What workout plans do I   | You have a few workout    | Here are your saved       | id=None args={}           | id='adk-0592a9f6-37d3-456 |
+|    |                   |          |             | have saved?               | plans saved! Here's what  | workout plans:  - **begin | name='list_user_plans'    | f-b88f-4caf77cd3323'      |
+|    |                   |          |             |                           | I found:  *   **build_fou | ner_strength_week1**:     |                           | args={}                   |
+|    |                   |          |             |                           | ndational_strength_an_wee | Beginner Strength (Week   |                           | name='list_user_plans'    |
+|    |                   |          |             |                           | k1**: This plan is for    | 1/4, Status: completed) - |                           |                           |
+|    |                   |          |             |                           | building foundational     | **run_a_5k_week2**: Run a |                           |                           |
+|    |                   |          |             |                           | strength and mastering    | 5k (Week 2/8, Status:     |                           |                           |
+|    |                   |          |             |                           | basic movement patterns.  | proposed) -               |                           |                           |
+|    |                   |          |             |                           | It's currently in Week 1  | **5k_run_week1**: Run a   |                           |                           |
+|    |                   |          |             |                           | of a 4-week program and   | 5k (Week 1/8, Status:     |                           |                           |
+|    |                   |          |             |                           | is in a "proposed"        | active) - **build_foundat |                           |                           |
+|    |                   |          |             |                           | status. *                 | ional_strength_an_week1** |                           |                           |
+|    |                   |          |             |                           | **5k_run_week1**: This    | : Build foundational      |                           |                           |
+|    |                   |          |             |                           | plan is for running a 5k. | strength and master basic |                           |                           |
+|    |                   |          |             |                           | It's in Week 1 of an      | movement patterns. (Week  |                           |                           |
+|    |                   |          |             |                           | 8-week program and is     | 1/4, Status: proposed)    |                           |                           |
+|    |                   |          |             |                           | "active." *   **beginner_ |                           |                           |                           |
+|    |                   |          |             |                           | strength_week1**: This is |                           |                           |                           |
+|    |                   |          |             |                           | a beginner strength plan, |                           |                           |                           |
+|    |                   |          |             |                           | currently in Week 1 of 4, |                           |                           |                           |
+|    |                   |          |             |                           | and is marked as          |                           |                           |                           |
+|    |                   |          |             |                           | "completed."              |                           |                           |                           |
++----+-------------------+----------+-------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+
+|  2 | EvalStatus.FAILED | 0.181818 |         0.5 | What are my exercises for | **Week 2 Workout Plan**   | It looks like you have a  | id=None                   |                           |
+|    |                   |          |             | this week? (week 2)       | Goal: Run a 5k  **Week 2: | few plans! To make sure I | args={'week_number': 2} n |                           |
+|    |                   |          |             |                           | Building Endurance** Day  | retrieve the correct      | ame='get_current_week_pla |                           |
+|    |                   |          |             |                           | 1: 25 min run Day 2: Rest | exercises for you, could  | n'                        |                           |
+|    |                   |          |             |                           | Day 3: 25 min run Day 4:  | you specify which plan    |                           |                           |
+|    |                   |          |             |                           | Rest Day 5: 30 min run    | you're referring to for   |                           |                           |
+|    |                   |          |             |                           | Day 6: Cross-training (30 | Week 2?  You have: *      |                           |                           |
+|    |                   |          |             |                           | min) Day 7: Rest          | **run_a_5k_week2**: Run a |                           |                           |
+|    |                   |          |             |                           |                           | 5k (Week 2/8, Status:     |                           |                           |
+|    |                   |          |             |                           |                           | proposed) *   You also    |                           |                           |
+|    |                   |          |             |                           |                           | have a **5k_run_week1**   |                           |                           |
+|    |                   |          |             |                           |                           | plan that's active, which |                           |                           |
+|    |                   |          |             |                           |                           | would have a Week 2. *    |                           |                           |
+|    |                   |          |             |                           |                           | And a **build_foundationa |                           |                           |
+|    |                   |          |             |                           |                           | l_strength_an_week1**     |                           |                           |
+|    |                   |          |             |                           |                           | plan that's proposed,     |                           |                           |
+|    |                   |          |             |                           |                           | which would also have a   |                           |                           |
+|    |                   |          |             |                           |                           | Week 2.  Which of these   |                           |                           |
+|    |                   |          |             |                           |                           | would you like to see for |                           |                           |
+|    |                   |          |             |                           |                           | this week?                |                           |                           |
++----+-------------------+----------+-------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+
+
+
+
+------------------------------ Captured log call -------------------------------
+WARNING  google_adk.google.adk.evaluation.agent_evaluator:agent_evaluator.py:293 Contents of /home/roiguri/projects/private/momentum/evals/test_sets/plan_storage.test.json appear to be in older format.To avoid this warning, please update your test files to contain data in EvalSet schema. You can use `migrate_eval_data_to_new_schema` for migrating your old test files.
+WARNING  google_adk.google.adk.runners:runners.py:270 App name mismatch detected. The runner is configured with app name "momentum", but the root agent was loaded from "/home/roiguri/projects/private/momentum/venv/lib/python3.12/site-packages/google/adk/agents", which implies app name "agents".
+WARNING  google_adk.google.adk.runners:runners.py:270 App name mismatch detected. The runner is configured with app name "EvaluationGenerator", but the root agent was loaded from "/home/roiguri/projects/private/momentum/venv/lib/python3.12/site-packages/google/adk/agents", which implies app name "agents".
+WARNING  google_genai.types:types.py:6334 Warning: there are non-text parts in the response: ['function_call'], returning concatenated text result from text parts. Check the full candidates.content.parts accessor to get the full model response.
+=============================== warnings summary ===============================
+evals/test_eval.py::test_plan_storage
+  /home/roiguri/projects/private/momentum/venv/lib/python3.12/site-packages/google/adk/evaluation/agent_evaluator.py:153: UserWarning: [EXPERIMENTAL] UserSimulatorProvider: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+    user_simulator_provider = UserSimulatorProvider(
+
+evals/test_eval.py::test_plan_storage
+  /home/roiguri/projects/private/momentum/venv/lib/python3.12/site-packages/google/adk/evaluation/metric_evaluator_registry.py:90: UserWarning: [EXPERIMENTAL] MetricEvaluatorRegistry: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+    metric_evaluator_registry = MetricEvaluatorRegistry()
+
+evals/test_eval.py::test_plan_storage
+  /home/roiguri/projects/private/momentum/venv/lib/python3.12/site-packages/google/adk/evaluation/local_eval_service.py:80: UserWarning: [EXPERIMENTAL] UserSimulatorProvider: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+    user_simulator_provider: UserSimulatorProvider = UserSimulatorProvider(),
+
+evals/test_eval.py::test_plan_storage
+  /home/roiguri/projects/private/momentum/venv/lib/python3.12/site-packages/google/adk/evaluation/agent_evaluator.py:557: UserWarning: [EXPERIMENTAL] LocalEvalService: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+    eval_service = LocalEvalService(
+
+evals/test_eval.py::test_plan_storage
+  /home/roiguri/projects/private/momentum/venv/lib/python3.12/site-packages/google/adk/evaluation/user_simulator_provider.py:77: UserWarning: [EXPERIMENTAL] StaticUserSimulator: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+    return StaticUserSimulator(static_conversation=eval_case.conversation)
+
+evals/test_eval.py::test_plan_storage
+  /home/roiguri/projects/private/momentum/venv/lib/python3.12/site-packages/google/adk/evaluation/static_user_simulator.py:39: UserWarning: [EXPERIMENTAL] UserSimulator: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+    super().__init__(
+
+evals/test_eval.py::test_plan_storage
+  /home/roiguri/projects/private/momentum/venv/lib/python3.12/site-packages/google/adk/runners.py:220: DeprecationWarning: The `plugins` argument is deprecated. Please use the `app` argument to provide plugins instead.
+    warnings.warn(
+
+evals/test_eval.py::test_plan_storage
+evals/test_eval.py::test_plan_storage
+evals/test_eval.py::test_plan_storage
+  /home/roiguri/projects/private/momentum/venv/lib/python3.12/site-packages/google/adk/runners.py:1300: DeprecationWarning: deprecated
+    save_input_blobs_as_artifacts=run_config.save_input_blobs_as_artifacts,
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED evals/test_eval.py::test_plan_storage - AssertionError: Following are all the test failures.
+tool_trajectory_avg_score for None Failed. Expected 1.0, but got 0.6666666666666666.
+response_match_score for None Failed. Expected 0.5, but got 0.4388893331962328.
+================ 1 failed, 3 deselected, 10 warnings in 28.10s =================

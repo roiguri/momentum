@@ -1,0 +1,17 @@
+[
+  {
+    "query": "My favorite type of workout is bodyweight exercises. I prefer to train at home.",
+    "expected_tool_use": [],
+    "reference": "That's great! Bodyweight exercises are excellent for building functional strength and can be done almost anywhere. Training at home offers fantastic flexibility. To help me create the best possible plan for you, could you tell me a bit more about your fitness goals? 1. **What specific fitness goal are you pursuing?** (e.g., \"build strength,\" \"improve endurance,\" \"lose weight,\" \"general fitness\") 2. **How many days per week can you commit to training?** 3. **What is your current fitness experience level?** (Beginner, Intermediate, or Advanced) 4. **Do you have any injuries or health conditions I should be aware of?**",
+    "follow_up": {
+      "query": "Can you create a workout plan for me?",
+      "expected_tool_use": [],
+      "reference": "Understanding your preference for bodyweight exercises at home, I can create a plan. To personalize it, I need details on your fitness goal, days per week for training, and current fitness level."
+    }
+  },
+  {
+    "query": "I need a workout plan. What was my preference for workouts?",
+    "expected_tool_use": [],
+    "reference": "Based on our last conversation, you mentioned that your favorite type of workout is **bodyweight exercises** and you prefer to **train at home**. To create your personalized workout plan, I still need a few more details: 1. **What specific fitness goal are you pursuing?** (e.g., \"build strength,\" \"improve endurance,\" \"lose weight,\" \"general fitness\") 2. **How many days per week can you commit to training?** 3. **What is your current fitness experience level?** (Beginner, Intermediate, or Advanced) 4. **Do you have any injuries or health conditions I should be aware of?**"
+  }
+]

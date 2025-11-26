@@ -60,4 +60,7 @@ Thumbs.db
 # ADK generated files
 agents/.adk/
 
+# Data files (sessions, plans, user data)
+data/
+
 course-notebooks/

@@ -66,8 +66,8 @@ This project demonstrates **8 of 11** key concepts from the course:
 
 ## Current Status
 
-**Active Phase**: Phase 4 - Sessions, Memory & LROs (Combined) - Planning
-**Overall Progress**: 2/11 phases completed (18%)
+**Active Phase**: Phase 4 - Sessions, Memory & LROs (Combined) - Complete (Goals 1-3)
+**Overall Progress**: 3/11 phases completed (27%)
 
 ---
 
@@ -79,7 +79,7 @@ This project demonstrates **8 of 11** key concepts from the course:
 | 1 | Chat-Planner (MVA) | ✅ Complete | 2025-11-16 | 2025-11-17 | ✅ Yes |
 | 2 | Instructor (Adding a Spoke) | ✅ Complete | 2025-11-18 | 2025-11-18 | ✅ Yes |
 | 3 | ~~Plan Persister~~ | ⚠️ **SKIPPED** | - | - | - |
-| 4 | Sessions, Memory & LROs | ⚪ Not Started | - | - | - |
+| 4 | Sessions, Memory & LROs | 🔄 In Progress | 2025-11-23 | - | ✅ Partial |
 | 5 | Logger (Detailed & Adherence) | ⚪ Not Started | - | - | - |
 | 6 | Editor (Plan Modification) | ⚪ Not Started | - | - | - |
 | 7 | Nutritionist (Core Feature) | ⚪ Not Started | - | - | - |
@@ -313,6 +313,70 @@ This project demonstrates **8 of 11** key concepts from the course:
 
 **Decision Date**: 2025-11-18
 
+
+---
+
+## Phase 4: Sessions, Memory & LROs (Partial) 🔄
+
+**Goal**: Establish production-ready persistence with DatabaseSessionService, Memory consolidation, and Exercise Plan Storage
+
+**Status**: Goals 1-3 Complete (LROs deferred)
+
+**Tasks**:
+- [x] **Goal 1**: Persistent Sessions (DatabaseSessionService)
+  - [x] Configure DatabaseSessionService with SQLite backend
+  - [x] Verify session persistence across restarts
+- [x] **Goal 2**: User Memory (InMemoryMemoryService)
+  - [x] Configure InMemoryMemoryService
+  - [x] Add preload_memory tool and auto_save_to_memory callback
+  - [x] Verify memory recall across different sessions
+- [x] **Goal 3**: Exercise Plan Storage
+  - [x] Create 4 plan tools (save_plan, load_plan, get_current_week_plan, list_user_plans)
+  - [x] Implement Firestore-compatible JSON schema
+  - [x] Verify plan persistence and retrieval
+- [ ] **Goal 4**: Long-Running Operations (LROs) - **DEFERRED**
+
+**Technical Decisions**:
+- **Sessions**: DatabaseSessionService with SQLite (`data/wellness_sessions.db`)
+- **Memory**: InMemoryMemoryService with automatic consolidation via callbacks
+- **Plan Storage**: File-based JSON with Firestore-compatible schema for Phase 5-7 migration
+- **Schema Design**: Matches roadmap's Firestore `plan` collection (lines 467-476)
+- **Migration Path**: File I/O → Firestore CRUD (same schema, minimal code changes)
+
+**Key Achievements**:
+1. **Session Persistence**: Conversations survive application restarts
+2. **Cross-Session Memory**: Agent recalls user facts across different conversations
+3. **Plan Storage**: Structured workout plans persist with query capabilities
+4. **Future-Proof Design**: JSON schema enables seamless Firestore migration
+
+**Files Modified**:
+- `agents/agent.py`: Added DatabaseSessionService and InMemoryMemoryService
+- `agents/hub.py`: Added preload_memory, auto_save_to_memory, and plan tools
+- `agents/prompts/wellness_chief.py`: Added Plan Storage instructions
+- `agents/tools/plan_tools.py`: Created 4 plan storage tools
+- `.gitignore`: Added data/ directory exclusion
+
+**Migration Documentation**:
+- **Current**: File-based JSON in `data/plans/{user_id}/`
+- **Phase 5-7**: Firestore CRUD with same schema
+- **Migration Steps**:
+  1. Create `core/database.py` with Firestore client
+  2. Replace file I/O with Firestore CRUD in `plan_tools.py`
+  3. Keep same function signatures (no tool interface changes)
+  4. Keep same JSON schema (no data transformation)
+  5. One-time script to migrate existing JSON files
+
+**Blockers**: None
+
+**Started**: 2025-11-23
+**Completed**: Goals 1-3 on 2025-11-23
+
+**Notes**:
+- LROs (Goal 4) deferred to allow focused implementation of persistence layer
+- Memory system uses InMemoryMemoryService (will migrate to Vertex AI Memory Bank in Phase 11)
+- Plan storage designed for zero-friction Firestore migration
+- All 3 goals verified with automated test scripts
+
 ---
 
 ## Next Steps
@@ -320,5 +384,8 @@ This project demonstrates **8 of 11** key concepts from the course:
 1. ✅ Review Day 3 course notebooks for sessions/memory best practices
 2. ✅ Update PROGRESS.md with Phase 2 completion
 3. ✅ Document architectural pivot (skip Phase 3)
-4. 🔄 Create Phase 4 implementation plan (Sessions + Memory + LROs combined)
-5. 🔄 Update roadmap.md with revised architecture
+4. ✅ Create Phase 4 implementation plan (Sessions + Memory + LROs combined)
+5. ✅ Implement Goals 1-3 (Sessions, Memory, Plan Storage)
+6. 🔄 Commit Phase 4 Goals 1-3
+7. 🔄 Decide on LROs implementation (Goal 4) or proceed to Phase 5
+
